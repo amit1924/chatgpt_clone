@@ -273,7 +273,7 @@ const App = () => {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen flex">
+    <div className="bg-gray-900 text-white min-h-screen flex overflow-y-auto overflow-x-hidden">
       <button
         className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-800 rounded-lg"
         onClick={handleSidebar}
@@ -378,7 +378,7 @@ const App = () => {
         </div>
 
         {/* Input Section */}
-        <div className="w-full max-w-2xl mx-auto p-3 mb-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center">
+        <div className="w-full max-w-2xl mx-auto p-3 mb-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center sticky bottom-0">
           <input
             type="text"
             value={inputValue}
