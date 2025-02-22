@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "@fontsource/poppins"; /* Import Poppins font */
+
+/* Apply global styles */
+body {
+  @apply bg-background text-textPrimary font-poppins;
+}
