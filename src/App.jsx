@@ -1,28 +1,21 @@
 // import React, { useState, useEffect, useRef } from "react";
 // import gptLogo from "./assets/chatgptLogo.svg";
-// import { Plus, LogOut, Menu, X, Send } from "lucide-react";
+// import { Plus, LogOut, Menu, X, Send, Trash2 } from "lucide-react";
 // import userIcon from "./assets/user-icon.png";
 // import gptImageIcon from "./assets/chatgpt.svg";
+// import { GoogleGenerativeAI } from "@google/generative-ai";
+// import DOMPurify from "dompurify";
+
+// const genAI = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
+// const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // const fetchAIResponse = async (message) => {
-//   const apiKey = import.meta.env.VITE_API_KEY;
-
 //   try {
-//     const response = await fetch(
-//       `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
-//       {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify({
-//           contents: [{ role: "user", parts: [{ text: message }] }],
-//         }),
-//       }
-//     );
-//     const data = await response.json();
+//     const result = await model.generateContent({
+//       contents: [{ role: "user", parts: [{ text: message }] }],
+//     });
 //     return (
-//       data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+//       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
 //       "I couldn't generate a response."
 //     );
 //   } catch (error) {
@@ -31,13 +24,83 @@
 //   }
 // };
 
+// // const fetchImageDescription = async (imageData) => {
+// //   try {
+// //     const result = await model.generateContent({
+// //       contents: [
+// //         {
+// //           role: "user",
+// //           parts: [
+// //             {
+// //               inlineData: {
+// //                 data: imageData.split(",")[1],
+// //                 mimeType: "image/png",
+// //               },
+// //             },
+// //           ],
+// //         },
+// //       ],
+// //     });
+// //     return (
+// //       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
+// //       "I couldn't analyze the image."
+// //     );
+// //   } catch (error) {
+// //     console.error("Error fetching image description:", error);
+// //     return "Error analyzing image.";
+// //   }
+// // };
+
+// const fetchImageDescription = async (imageData) => {
+//   try {
+//     const result = await model.generateContent({
+//       contents: [
+//         {
+//           role: "user",
+//           parts: [
+//             { text: "Describe this image." }, // Adding text for multimodal prompt
+//             {
+//               inlineData: {
+//                 data: imageData.split(",")[1],
+//                 mimeType: "image/png", // Ensure correct mime type
+//               },
+//             },
+//           ],
+//         },
+//       ],
+//     });
+//     return (
+//       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
+//       "I couldn't analyze the image."
+//     );
+//   } catch (error) {
+//     console.error("Error fetching image description:", error);
+//     return "Error analyzing image.";
+//   }
+// };
+
 // const App = () => {
+//   const [imageDescription, setImageDescription] = useState("");
+//   const [image, setImage] = useState(null);
+//   const [heading, setHeading] = useState(true);
 //   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-//   const [messages, setMessages] = useState([]);
+//   const [messages, setMessages] = useState(() => {
+//     const savedMessages = localStorage.getItem("chatMessages");
+//     return savedMessages ? JSON.parse(savedMessages) : [];
+//   });
 //   const [inputValue, setInputValue] = useState("");
 //   const [isLoading, setIsLoading] = useState(false);
-//   const [heading, setHeading] = useState(true);
+
 //   const chatEndRef = useRef(null);
+
+//   useEffect(() => {
+//     const savedMessages = JSON.parse(localStorage.getItem("chatMessages"));
+//     setHeading(!(savedMessages && savedMessages.length > 0));
+//   }, []);
+
+//   useEffect(() => {
+//     localStorage.setItem("chatMessages", JSON.stringify(messages));
+//   }, [messages]);
 
 //   useEffect(() => {
 //     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,13 +120,39 @@
 //     }
 //   };
 
+//   const handleImageUpload = async (event) => {
+//     const file = event.target.files[0];
+//     if (file) {
+//       const reader = new FileReader();
+//       reader.onloadend = async () => {
+//         const imageData = reader.result;
+//         setImage(imageData);
+//         setMessages((prev) => [
+//           ...prev,
+//           { text: "Analyzing image...", sender: "ai" },
+//         ]);
+//         const description = await fetchImageDescription(imageData);
+//         setMessages((prev) => [
+//           ...prev,
+//           { text: `Image Description: ${description}`, sender: "ai" },
+//         ]);
+//       };
+//       reader.readAsDataURL(file);
+//     }
+//   };
+
+//   const handleClearChat = () => {
+//     setMessages([]);
+//     setHeading(true);
+//     localStorage.removeItem("chatMessages");
+//   };
+
 //   const handleSidebar = () => {
 //     setIsSidebarOpen(!isSidebarOpen);
-//     setHeading(!heading);
 //   };
 
 //   return (
-//     <div className="bg-gray-900 text-white min-h-screen flex">
+//     <div className="bg-gray-900 text-white min-h-screen flex overflow-y-auto overflow-x-hidden">
 //       <button
 //         className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-800 rounded-lg"
 //         onClick={handleSidebar}
@@ -76,34 +165,40 @@
 //       </button>
 
 //       <aside
-//         className={`fixed min-h-screen md:relative top-0 left-0 h-full w-64 bg-gray-800 p-4 flex flex-col justify-between transition-transform duration-300 ${
+//         className={`fixed min-h-screen md:relative top-0 z-20 left-0 h-full w-64 bg-gray-900 p-4 flex flex-col justify-between transition-transform duration-300 ${
 //           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
 //         } md:translate-x-0`}
 //       >
 //         <div>
-//           <div className="flex items-center gap-2 mb-6">
+//           <div className="flex items-center gap-2 mb-6 ml-7 md:ml-0">
 //             <img src={gptLogo} alt="ChatGPT Logo" className="w-8 h-8" />
 //             <span className="text-lg font-semibold">AI Assistant</span>
 //           </div>
-//           <button className="w-full flex items-center gap-2 bg-green-600 p-2 rounded-lg text-white hover:bg-green-700 transition">
+//           <button className="w-full flex items-center gap-2 p-2 rounded-lg text-white hover:bg-green-700 transition">
 //             <Plus className="w-5 h-5" /> New Chat
 //           </button>
 //         </div>
-//         <button className="w-full flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
-//           <LogOut className="w-4 h-4" /> Logout
-//         </button>
+//         <div className="flex flex-col gap-2">
+//           <button
+//             onClick={handleClearChat}
+//             className="w-full flex items-center gap-2  p-2 hover:text-xl transition-all duration-200 rounded-full "
+//           >
+//             <Trash2 className="w-4 h-4" /> Clear Chat
+//           </button>
+//           <button className="w-full flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-900 hover:bg-gray-600 transition">
+//             <LogOut className="w-4 h-4" /> Logout
+//           </button>
+//         </div>
 //       </aside>
 
 //       <main className="flex-1 flex flex-col h-screen">
-//         {heading ? (
-//           <h1 className="text-center text-2xl mt-[15rem] ">
-//             Welcome user,
+//         {heading && (
+//           <h1 className="text-center text-2xl mt-[15rem]">
+//             Welcome user,{" "}
 //             <span className="text-purple-700 animate-pulse">
 //               I am your AI assistant
 //             </span>
 //           </h1>
-//         ) : (
-//           ""
 //         )}
 
 //         <div className="flex-1 w-full max-w-2xl mx-auto overflow-y-auto p-4 space-y-4">
@@ -121,19 +216,22 @@
 //                   className="w-6 h-6 rounded-full"
 //                 />
 //               )}
+
 //               <div
-//                 className={`p-3 rounded-lg max-w-[99%] ${
+//                 className={`p-3 rounded-full max-w-[99%] ${
 //                   message.sender === "user"
-//                     ? "bg-blue-900 text-white"
+//                     ? " text-fuchsia-600 text-xl"
 //                     : "text-white"
 //                 }`}
 //                 dangerouslySetInnerHTML={{
-//                   __html: message.text
-//                     .replace(
-//                       /\*\*(.*?)\*\*/g,
-//                       '<strong class="text-green-400 text-lg">$1</strong>'
-//                     )
-//                     .replace(/\n/g, "<br/>"),
+//                   __html: DOMPurify.sanitize(
+//                     message.text
+//                       .replace(
+//                         /\*\*(.*?)\*\*/g,
+//                         '<strong class="text-green-400 text-lg">$1</strong>'
+//                       )
+//                       .replace(/\n/g, "<br/>")
+//                   ),
 //                 }}
 //               ></div>
 //               {message.sender === "user" && (
@@ -157,15 +255,41 @@
 //           <div ref={chatEndRef}></div>
 //         </div>
 
-//         <div className="w-full max-w-2xl mx-auto p-3 mb-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center">
+//         <div className=" w-screen md:w-full max-w-lg md:max-w-xl mx-auto p-1 md:p-3 mb-2 bg-gray-900 rounded-lg border border-gray-700 flex items-center sticky bottom-0">
 //           <input
 //             type="text"
 //             value={inputValue}
 //             onChange={(e) => setInputValue(e.target.value)}
-//             onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-//             placeholder="Send a message..."
-//             className="flex-1 bg-transparent outline-none text-white p-2"
+//             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+//             placeholder="Ask anything..."
+//             className="flex-1 bg-transparent rounded-lg text-white text-lg p-2 border-none outline-none"
 //           />
+
+//           <label className="ml-2 p-2 bg-gray-00 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+//             <input
+//               type="file"
+//               accept="image/*"
+//               onChange={handleImageUpload}
+//               className="hidden"
+//             />
+//             <span>
+//               <svg
+//                 xmlns="http://www.w3.org/2000/svg"
+//                 width="24"
+//                 height="24"
+//                 viewBox="0 0 24 24"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 stroke-width="2"
+//                 stroke-linecap="round"
+//                 stroke-linejoin="round"
+//                 class="lucide lucide-paperclip"
+//               >
+//                 <path d="M13.234 20.252 21 12.3" />
+//                 <path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486" />
+//               </svg>
+//             </span>
+//           </label>
 //           <button
 //             onClick={handleSendMessage}
 //             className="ml-2 p-2 bg-green-600 rounded-lg hover:bg-green-700 transition"
@@ -186,26 +310,36 @@ import gptLogo from "./assets/chatgptLogo.svg";
 import { Plus, LogOut, Menu, X, Send, Trash2 } from "lucide-react";
 import userIcon from "./assets/user-icon.png";
 import gptImageIcon from "./assets/chatgpt.svg";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import DOMPurify from "dompurify";
+import { TbHttpDelete } from "react-icons/tb";
+import { PiChatThin } from "react-icons/pi";
 
-const fetchAIResponse = async (message) => {
-  const apiKey = import.meta.env.VITE_API_KEY;
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+const fetchAIResponse = async (message, imageData = null) => {
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: message }] }],
-        }),
-      }
-    );
-    const data = await response.json();
+    const contents = imageData
+      ? [
+          {
+            role: "user",
+            parts: [
+              { text: message },
+              {
+                inlineData: {
+                  data: imageData.split(",")[1],
+                  mimeType: "image/png",
+                },
+              },
+            ],
+          },
+        ]
+      : [{ role: "user", parts: [{ text: message }] }];
+
+    const result = await model.generateContent({ contents });
     return (
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "I couldn't generate a response."
     );
   } catch (error) {
@@ -215,6 +349,7 @@ const fetchAIResponse = async (message) => {
 };
 
 const App = () => {
+  const [image, setImage] = useState(null);
   const [heading, setHeading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState(() => {
@@ -225,67 +360,89 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const chatEndRef = useRef(null);
-  // Check localStorage for existing messages on initial render
+
   useEffect(() => {
     const savedMessages = JSON.parse(localStorage.getItem("chatMessages"));
-    if (savedMessages && savedMessages.length > 0) {
-      setHeading(false);
-    } else {
-      setHeading(true);
-    }
+    setHeading(!(savedMessages && savedMessages.length > 0));
   }, []);
 
-  // Save messages to localStorage when they update
   useEffect(() => {
     localStorage.setItem("chatMessages", JSON.stringify(messages));
   }, [messages]);
 
-  // Scroll to the latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle sending messages
   const handleSendMessage = async () => {
     if (inputValue.trim()) {
       const userMessage = inputValue.trim();
-      setMessages([...messages, { text: userMessage, sender: "user" }]);
+      setMessages((prev) => [
+        ...prev,
+        { text: userMessage, sender: "user", image: null },
+      ]);
       setInputValue("");
       setIsLoading(true);
       setHeading(false);
 
-      const aiResponse = await fetchAIResponse(userMessage);
-      setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }]);
+      const aiResponse = await fetchAIResponse(userMessage, image);
+      setMessages((prev) => [
+        ...prev,
+        { text: aiResponse, sender: "ai", image: null },
+      ]);
       setIsLoading(false);
     }
   };
 
-  // Clear chat history
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const imageData = reader.result;
+        setImage(imageData);
+        setMessages((prev) => [
+          ...prev,
+          { text: "Image uploaded. Analyzing...", sender: "ai", image: null },
+        ]);
+        const description = await fetchAIResponse(
+          "Describe this image.",
+          imageData
+        );
+        setMessages((prev) => [
+          ...prev,
+          { text: description, sender: "ai", image: imageData },
+        ]);
+      };
+      setHeading(false);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleClearChat = () => {
     setMessages([]);
     setHeading(true);
     localStorage.removeItem("chatMessages");
+    setImage(null);
   };
 
   const handleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
-    // setHeading(!heading);
   };
 
   return (
     <div className="bg-gray-900 text-white min-h-screen flex overflow-y-auto overflow-x-hidden">
       <button
-        className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-800 rounded-lg"
+        className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-900 rounded-lg"
         onClick={handleSidebar}
       >
         {isSidebarOpen ? (
-          <X className="w-6 h-6  text-white" />
+          <X className="w-6 h-6 text-white" />
         ) : (
           <Menu className="w-6 h-6 text-white" />
         )}
       </button>
 
-      {/* Sidebar */}
       <aside
         className={`fixed min-h-screen md:relative top-0 z-20 left-0 h-full w-64 bg-gray-800 p-4 flex flex-col justify-between transition-transform duration-300 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -296,16 +453,17 @@ const App = () => {
             <img src={gptLogo} alt="ChatGPT Logo" className="w-8 h-8" />
             <span className="text-lg font-semibold">AI Assistant</span>
           </div>
-          <button className="w-full flex items-center gap-2 bg-green-600 p-2 rounded-lg text-white hover:bg-green-700 transition">
+          <button className="w-full flex items-center gap-2 p-2 rounded-lg text-white hover:bg-green-700 transition">
             <Plus className="w-5 h-5" /> New Chat
           </button>
         </div>
         <div className="flex flex-col gap-2">
           <button
             onClick={handleClearChat}
-            className="w-full flex items-center gap-2 bg-red-600 p-2 rounded-lg hover:bg-red-700 transition"
+            className="w-full flex items-center gap-2  p-2 rounded-lg  transition"
           >
-            <Trash2 className="w-4 h-4" /> Clear Chat
+            <TbHttpDelete className="text-4xl" color="green" />
+            <PiChatThin className="text-2xl" color="green" />
           </button>
           <button className="w-full flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
             <LogOut className="w-4 h-4" /> Logout
@@ -313,17 +471,14 @@ const App = () => {
         </div>
       </aside>
 
-      {/* Main Chat Area */}
       <main className="flex-1 flex flex-col h-screen">
-        {heading ? (
-          <h1 className="text-center text-2xl  mt-[15rem] ">
-            Welcome user,
+        {heading && (
+          <h1 className="text-center text-2xl mt-[15rem]">
+            Welcome user,{" "}
             <span className="text-purple-700 animate-pulse">
               I am your AI assistant
             </span>
           </h1>
-        ) : (
-          ""
         )}
 
         <div className="flex-1 w-full max-w-2xl mx-auto overflow-y-auto p-4 space-y-4">
@@ -343,19 +498,29 @@ const App = () => {
               )}
               <div
                 className={`p-3 rounded-lg max-w-[99%] ${
-                  message.sender === "user"
-                    ? "bg-blue-900 text-white"
-                    : "text-white"
+                  message.sender === "user" ? " text-slate-600" : " text-white"
                 }`}
-                dangerouslySetInnerHTML={{
-                  __html: message.text
-                    .replace(
-                      /\*\*(.*?)\*\*/g,
-                      '<strong class="text-green-400 text-lg">$1</strong>'
-                    )
-                    .replace(/\n/g, "<br/>"),
-                }}
-              ></div>
+              >
+                {message.image && (
+                  <img
+                    src={message.image}
+                    alt="Uploaded"
+                    className="w-48 h-48 object-cover rounded-lg mb-2"
+                  />
+                )}
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      message.text
+                        .replace(
+                          /\*\*(.*?)\*\*/g,
+                          '<strong class="text-green-400 text-lg">$1</strong>'
+                        )
+                        .replace(/\n/g, "<br/>")
+                    ),
+                  }}
+                ></div>
+              </div>
               {message.sender === "user" && (
                 <img
                   src={userIcon}
@@ -377,16 +542,40 @@ const App = () => {
           <div ref={chatEndRef}></div>
         </div>
 
-        {/* Input Section */}
         <div className="w-full max-w-2xl mx-auto p-3 mb-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center sticky bottom-0">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             placeholder="Send a message..."
             className="flex-1 bg-transparent outline-none text-white p-2"
           />
+          <label className="ml-2 p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-paperclip"
+              >
+                <path d="M13.234 20.252 21 12.3" />
+                <path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486" />
+              </svg>
+            </span>
+          </label>
           <button
             onClick={handleSendMessage}
             className="ml-2 p-2 bg-green-600 rounded-lg hover:bg-green-700 transition"
