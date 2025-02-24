@@ -5,15 +5,32 @@
 // import gptImageIcon from "./assets/chatgpt.svg";
 // import { GoogleGenerativeAI } from "@google/generative-ai";
 // import DOMPurify from "dompurify";
+// import { TbHttpDelete } from "react-icons/tb";
+// import { PiChatThin } from "react-icons/pi";
 
 // const genAI = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
 // const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// const fetchAIResponse = async (message) => {
+// const fetchAIResponse = async (message, imageData = null) => {
 //   try {
-//     const result = await model.generateContent({
-//       contents: [{ role: "user", parts: [{ text: message }] }],
-//     });
+//     const contents = imageData
+//       ? [
+//           {
+//             role: "user",
+//             parts: [
+//               { text: message },
+//               {
+//                 inlineData: {
+//                   data: imageData.split(",")[1],
+//                   mimeType: "image/png",
+//                 },
+//               },
+//             ],
+//           },
+//         ]
+//       : [{ role: "user", parts: [{ text: message }] }];
+
+//     const result = await model.generateContent({ contents });
 //     return (
 //       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
 //       "I couldn't generate a response."
@@ -24,63 +41,7 @@
 //   }
 // };
 
-// // const fetchImageDescription = async (imageData) => {
-// //   try {
-// //     const result = await model.generateContent({
-// //       contents: [
-// //         {
-// //           role: "user",
-// //           parts: [
-// //             {
-// //               inlineData: {
-// //                 data: imageData.split(",")[1],
-// //                 mimeType: "image/png",
-// //               },
-// //             },
-// //           ],
-// //         },
-// //       ],
-// //     });
-// //     return (
-// //       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-// //       "I couldn't analyze the image."
-// //     );
-// //   } catch (error) {
-// //     console.error("Error fetching image description:", error);
-// //     return "Error analyzing image.";
-// //   }
-// // };
-
-// const fetchImageDescription = async (imageData) => {
-//   try {
-//     const result = await model.generateContent({
-//       contents: [
-//         {
-//           role: "user",
-//           parts: [
-//             { text: "Describe this image." }, // Adding text for multimodal prompt
-//             {
-//               inlineData: {
-//                 data: imageData.split(",")[1],
-//                 mimeType: "image/png", // Ensure correct mime type
-//               },
-//             },
-//           ],
-//         },
-//       ],
-//     });
-//     return (
-//       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-//       "I couldn't analyze the image."
-//     );
-//   } catch (error) {
-//     console.error("Error fetching image description:", error);
-//     return "Error analyzing image.";
-//   }
-// };
-
 // const App = () => {
-//   const [imageDescription, setImageDescription] = useState("");
 //   const [image, setImage] = useState(null);
 //   const [heading, setHeading] = useState(true);
 //   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -109,13 +70,19 @@
 //   const handleSendMessage = async () => {
 //     if (inputValue.trim()) {
 //       const userMessage = inputValue.trim();
-//       setMessages([...messages, { text: userMessage, sender: "user" }]);
+//       setMessages((prev) => [
+//         ...prev,
+//         { text: userMessage, sender: "user", image: null },
+//       ]);
 //       setInputValue("");
 //       setIsLoading(true);
 //       setHeading(false);
 
-//       const aiResponse = await fetchAIResponse(userMessage);
-//       setMessages((prev) => [...prev, { text: aiResponse, sender: "ai" }]);
+//       const aiResponse = await fetchAIResponse(userMessage, image);
+//       setMessages((prev) => [
+//         ...prev,
+//         { text: aiResponse, sender: "ai", image: null },
+//       ]);
 //       setIsLoading(false);
 //     }
 //   };
@@ -129,14 +96,18 @@
 //         setImage(imageData);
 //         setMessages((prev) => [
 //           ...prev,
-//           { text: "Analyzing image...", sender: "ai" },
+//           { text: "Image uploaded. Analyzing...", sender: "ai", image: null },
 //         ]);
-//         const description = await fetchImageDescription(imageData);
+//         const description = await fetchAIResponse(
+//           "Describe this image.",
+//           imageData
+//         );
 //         setMessages((prev) => [
 //           ...prev,
-//           { text: `Image Description: ${description}`, sender: "ai" },
+//           { text: description, sender: "ai", image: imageData },
 //         ]);
 //       };
+//       setHeading(false);
 //       reader.readAsDataURL(file);
 //     }
 //   };
@@ -145,6 +116,7 @@
 //     setMessages([]);
 //     setHeading(true);
 //     localStorage.removeItem("chatMessages");
+//     setImage(null);
 //   };
 
 //   const handleSidebar = () => {
@@ -154,7 +126,7 @@
 //   return (
 //     <div className="bg-gray-900 text-white min-h-screen flex overflow-y-auto overflow-x-hidden">
 //       <button
-//         className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-800 rounded-lg"
+//         className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-900 rounded-lg"
 //         onClick={handleSidebar}
 //       >
 //         {isSidebarOpen ? (
@@ -165,7 +137,7 @@
 //       </button>
 
 //       <aside
-//         className={`fixed min-h-screen md:relative top-0 z-20 left-0 h-full w-64 bg-gray-900 p-4 flex flex-col justify-between transition-transform duration-300 ${
+//         className={`fixed min-h-screen md:relative top-0 z-20 left-0 h-full w-64 bg-gray-800 p-4 flex flex-col justify-between transition-transform duration-300 ${
 //           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
 //         } md:translate-x-0`}
 //       >
@@ -181,11 +153,12 @@
 //         <div className="flex flex-col gap-2">
 //           <button
 //             onClick={handleClearChat}
-//             className="w-full flex items-center gap-2  p-2 hover:text-xl transition-all duration-200 rounded-full "
+//             className="w-full flex items-center gap-2  p-2 rounded-lg  transition"
 //           >
-//             <Trash2 className="w-4 h-4" /> Clear Chat
+//             <TbHttpDelete className="text-4xl" color="green" />
+//             <PiChatThin className="text-2xl" color="green" />
 //           </button>
-//           <button className="w-full flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-900 hover:bg-gray-600 transition">
+//           <button className="w-full flex items-center gap-2 text-sm p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
 //             <LogOut className="w-4 h-4" /> Logout
 //           </button>
 //         </div>
@@ -216,24 +189,31 @@
 //                   className="w-6 h-6 rounded-full"
 //                 />
 //               )}
-
 //               <div
-//                 className={`p-3 rounded-full max-w-[99%] ${
-//                   message.sender === "user"
-//                     ? " text-fuchsia-600 text-xl"
-//                     : "text-white"
+//                 className={`p-3 rounded-lg max-w-[99%] ${
+//                   message.sender === "user" ? " text-slate-600" : " text-white"
 //                 }`}
-//                 dangerouslySetInnerHTML={{
-//                   __html: DOMPurify.sanitize(
-//                     message.text
-//                       .replace(
-//                         /\*\*(.*?)\*\*/g,
-//                         '<strong class="text-green-400 text-lg">$1</strong>'
-//                       )
-//                       .replace(/\n/g, "<br/>")
-//                   ),
-//                 }}
-//               ></div>
+//               >
+//                 {message.image && (
+//                   <img
+//                     src={message.image}
+//                     alt="Uploaded"
+//                     className="w-48 h-48 object-cover rounded-lg mb-2"
+//                   />
+//                 )}
+//                 <div
+//                   dangerouslySetInnerHTML={{
+//                     __html: DOMPurify.sanitize(
+//                       message.text
+//                         .replace(
+//                           /\*\*(.*?)\*\*/g,
+//                           '<strong class="text-green-400 text-lg">$1</strong>'
+//                         )
+//                         .replace(/\n/g, "<br/>")
+//                     ),
+//                   }}
+//                 ></div>
+//               </div>
 //               {message.sender === "user" && (
 //                 <img
 //                   src={userIcon}
@@ -255,17 +235,16 @@
 //           <div ref={chatEndRef}></div>
 //         </div>
 
-//         <div className=" w-screen md:w-full max-w-lg md:max-w-xl mx-auto p-1 md:p-3 mb-2 bg-gray-900 rounded-lg border border-gray-700 flex items-center sticky bottom-0">
+//         <div className="w-full max-w-2xl mx-auto p-3 mb-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center sticky bottom-0">
 //           <input
 //             type="text"
 //             value={inputValue}
 //             onChange={(e) => setInputValue(e.target.value)}
 //             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-//             placeholder="Ask anything..."
-//             className="flex-1 bg-transparent rounded-lg text-white text-lg p-2 border-none outline-none"
+//             placeholder="Send a message..."
+//             className="flex-1 bg-transparent outline-none text-white p-2"
 //           />
-
-//           <label className="ml-2 p-2 bg-gray-00 rounded-lg hover:bg-gray-600 transition cursor-pointer">
+//           <label className="ml-2 p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition cursor-pointer">
 //             <input
 //               type="file"
 //               accept="image/*"
@@ -360,6 +339,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const savedMessages = JSON.parse(localStorage.getItem("chatMessages"));
@@ -373,6 +353,23 @@ const App = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      window.scrollTo(0, 0); // Scroll to the top of the page
+    };
+
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener("focus", handleFocus);
+    }
+
+    return () => {
+      if (inputElement) {
+        inputElement.removeEventListener("focus", handleFocus);
+      }
+    };
+  }, []);
 
   const handleSendMessage = async () => {
     if (inputValue.trim()) {
@@ -433,7 +430,7 @@ const App = () => {
   return (
     <div className="bg-gray-900 text-white min-h-screen flex overflow-y-auto overflow-x-hidden">
       <button
-        className="md:hidden absolute top-4 left-1 z-50 p-2 bg-gray-900 rounded-lg"
+        className="md:hidden fixed top-4 left-1 z-50 p-2 bg-gray-900 rounded-lg"
         onClick={handleSidebar}
       >
         {isSidebarOpen ? (
@@ -481,7 +478,7 @@ const App = () => {
           </h1>
         )}
 
-        <div className="flex-1 w-full max-w-2xl mx-auto overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 w-full max-w-2xl mx-auto overflow-y-auto p-4 space-y-4 chat-container">
           {messages.map((message, index) => (
             <div
               key={index}
@@ -545,6 +542,7 @@ const App = () => {
         <div className="w-full max-w-2xl mx-auto p-3 mb-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center sticky bottom-0">
           <input
             type="text"
+            ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
