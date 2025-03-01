@@ -788,11 +788,26 @@ const App = () => {
     const file = event.target.files[0];
     if (file) {
       // Validate the file type
-      if (!file.type.startsWith("image/")) {
+      const supportedFormats = ["image/jpeg", "image/png", "image/webp"];
+      if (!supportedFormats.includes(file.type)) {
         setMessages((prev) => [
           ...prev,
           {
-            text: "Please upload a valid image file.",
+            text: "Please upload a valid image file (JPEG, PNG, or WebP).",
+            sender: "ai",
+            image: null,
+          },
+        ]);
+        return;
+      }
+
+      // Validate the file size (e.g., 5MB limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Image is too large. Please upload an image smaller than 5MB.",
             sender: "ai",
             image: null,
           },
@@ -807,7 +822,10 @@ const App = () => {
         const imageData = reader.result;
         const mimeType = file.type;
 
-        setImage(imageData);
+        // Compress the image if necessary
+        const compressedImageData = await compressImage(imageData, mimeType);
+
+        setImage(compressedImageData);
         setMessages((prev) => [
           ...prev,
           {
@@ -820,7 +838,7 @@ const App = () => {
         try {
           const description = await fetchAIResponse(
             "Describe this image.",
-            imageData,
+            compressedImageData,
             mimeType
           );
 
@@ -838,7 +856,7 @@ const App = () => {
 
           setMessages((prev) => [
             ...prev,
-            { text: description, sender: "ai", image: imageData },
+            { text: description, sender: "ai", image: compressedImageData },
           ]);
         } catch (error) {
           console.error("Error analyzing image:", error);
@@ -858,6 +876,48 @@ const App = () => {
       setHeading(false);
       reader.readAsDataURL(file);
     }
+  };
+
+  const compressImage = async (
+    imageData,
+    mimeType,
+    maxWidth = 800,
+    quality = 0.8
+  ) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = imageData;
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Calculate new dimensions
+        const scale = Math.min(maxWidth / img.width, 1);
+        const width = img.width * scale;
+        const height = img.height * scale;
+
+        // Set canvas dimensions
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw the image on the canvas
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert the canvas to a data URL with reduced quality
+        canvas.toBlob(
+          (blob) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          },
+          mimeType,
+          quality
+        );
+      };
+
+      img.onerror = (error) => reject(error);
+    });
   };
 
   const handleClearChat = () => {
