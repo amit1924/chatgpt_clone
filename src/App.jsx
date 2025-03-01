@@ -573,6 +573,40 @@ const fetchWeather = async (city) => {
 };
 
 // Fetch AI response
+// const fetchAIResponse = async (
+//   message,
+//   imageData = null,
+//   mimeType = "image/png"
+// ) => {
+//   try {
+//     const contents = imageData
+//       ? [
+//           {
+//             role: "user",
+//             parts: [
+//               { text: message },
+//               {
+//                 inlineData: {
+//                   data: imageData.split(",")[1],
+//                   mimeType: mimeType,
+//                 },
+//               },
+//             ],
+//           },
+//         ]
+//       : [{ role: "user", parts: [{ text: message }] }];
+
+//     const result = await model.generateContent({ contents });
+//     return (
+//       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
+//       "I couldn't generate a response."
+//     );
+//   } catch (error) {
+//     console.error("Error fetching AI response:", error);
+//     return "Error fetching response.";
+//   }
+// };
+
 const fetchAIResponse = async (
   message,
   imageData = null,
@@ -603,7 +637,7 @@ const fetchAIResponse = async (
     );
   } catch (error) {
     console.error("Error fetching AI response:", error);
-    return "Error fetching response.";
+    throw error; // Re-throw the error to handle it in the calling function
   }
 };
 
@@ -702,9 +736,72 @@ const App = () => {
     }
   };
 
+  // const handleImageUpload = async (event) => {
+  //   const file = event.target.files[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = async () => {
+  //       const imageData = reader.result;
+  //       const mimeType = file.type;
+
+  //       setImage(imageData);
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           text: "Image uploaded, now analyzing...",
+  //           sender: "ai",
+  //           image: null,
+  //         },
+  //       ]);
+
+  //       const description = await fetchAIResponse(
+  //         "Describe this image.",
+  //         imageData,
+  //         mimeType
+  //       );
+
+  //       if (!description) {
+  //         setMessages((prev) => [
+  //           ...prev,
+  //           {
+  //             text: "I couldn't generate a response.",
+  //             sender: "ai",
+  //             image: null,
+  //           },
+  //         ]);
+  //         return;
+  //       }
+
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         { text: description, sender: "ai", image: imageData },
+  //       ]);
+  //     };
+
+  //     setHeading(false);
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
+
+  ///
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
+      // Validate the file type
+      if (!file.type.startsWith("image/")) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            text: "Please upload a valid image file.",
+            sender: "ai",
+            image: null,
+          },
+        ]);
+        return;
+      }
+
+      setIsLoading(true); // Start loading
+
       const reader = new FileReader();
       reader.onloadend = async () => {
         const imageData = reader.result;
@@ -720,28 +817,42 @@ const App = () => {
           },
         ]);
 
-        const description = await fetchAIResponse(
-          "Describe this image.",
-          imageData,
-          mimeType
-        );
+        try {
+          const description = await fetchAIResponse(
+            "Describe this image.",
+            imageData,
+            mimeType
+          );
 
-        if (!description) {
+          if (!description) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                text: "I couldn't generate a response.",
+                sender: "ai",
+                image: null,
+              },
+            ]);
+            return;
+          }
+
+          setMessages((prev) => [
+            ...prev,
+            { text: description, sender: "ai", image: imageData },
+          ]);
+        } catch (error) {
+          console.error("Error analyzing image:", error);
           setMessages((prev) => [
             ...prev,
             {
-              text: "I couldn't generate a response.",
+              text: "Sorry, I couldn't analyze the image. Please try again.",
               sender: "ai",
               image: null,
             },
           ]);
-          return;
+        } finally {
+          setIsLoading(false); // Stop loading
         }
-
-        setMessages((prev) => [
-          ...prev,
-          { text: description, sender: "ai", image: imageData },
-        ]);
       };
 
       setHeading(false);
