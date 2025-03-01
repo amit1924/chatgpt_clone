@@ -1,6 +1,19 @@
 // import React, { useState, useEffect, useRef } from "react";
 // import gptLogo from "./assets/chatgptLogo.svg";
-// import { Plus, LogOut, Menu, X, Send, Trash2 } from "lucide-react";
+// import {
+//   Plus,
+//   LogOut,
+//   Menu,
+//   X,
+//   Send,
+//   Trash2,
+//   Sun,
+//   Cloud,
+//   CloudRain,
+//   CloudLightning,
+//   Snowflake,
+//   CloudDrizzle,
+// } from "lucide-react";
 // import userIcon from "./assets/working.png";
 // import gptImageIcon from "./assets/chatgpt.svg";
 // import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -11,37 +24,61 @@
 // const genAI = new GoogleGenerativeAI(import.meta.env.VITE_API_KEY);
 // const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// // const fetchAIResponse = async (message, imageData = null) => {
-// //   try {
-// //     const contents = imageData
-// //       ? [
-// //           {
-// //             role: "user",
-// //             parts: [
-// //               { text: message },
-// //               {
-// //                 inlineData: {
-// //                   data: imageData.split(",")[1],
-// //                   mimeType: "image/png",
-// //                 },
-// //               },
-// //             ],
-// //           },
-// //         ]
-// //       : [{ role: "user", parts: [{ text: message }] }];
+// // Weather API URL
+// const API_URL =
+//   "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
 
-// //     const result = await model.generateContent({ contents });
-// //     return (
-// //       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-// //       "I couldn't generate a response."
-// //     );
-// //   } catch (error) {
-// //     console.error("Error fetching AI response:", error);
-// //     return "Error fetching response.";
-// //   }
-// // };
+// // Fetch weather data
+// const fetchWeather = async (city) => {
+//   try {
+//     const response = await fetch(
+//       `${API_URL}${city}&appid=${import.meta.env.VITE_WEATHER_API_KEY}`
+//     );
 
-// ///////////////////////
+//     if (response.ok) {
+//       const data = await response.json();
+//       console.log("Weather data:", data);
+//       const weatherDescription = data.weather[0].description;
+//       const temp = Math.round(data.main.temp);
+//       const humidity = data.main.humidity;
+//       const windSpeed = data.wind.speed;
+
+//       // Map weather conditions to icons
+//       const weatherIcons = {
+//         "clear sky": "sun",
+//         "few clouds": "cloud",
+//         "scattered clouds": "cloud",
+//         "broken clouds": "cloud",
+//         "shower rain": "cloud-rain",
+//         "light intensity drizzle": "cloud-rain",
+//         rain: "cloud-rain",
+//         thunderstorm: "cloud-lightning",
+//         snow: "snowflake",
+//         mist: "cloud-drizzle",
+//       };
+
+//       const weatherIcon =
+//         weatherIcons[weatherDescription.toLowerCase()] || "cloud";
+
+//       // Create a message to display
+//       const weatherMessage = `The weather in ${data.name} is ${weatherDescription}. The temperature is ${temp}°C with a humidity of ${humidity}%. Wind speed is ${windSpeed} km/h.`;
+
+//       // Return the weather message and icon
+//       return { weatherMessage, weatherIcon };
+//     } else {
+//       console.error("Weather API response not OK:", response.status);
+//       return { weatherMessage: "City not found", weatherIcon: null };
+//     }
+//   } catch (error) {
+//     console.error("Error fetching weather:", error);
+//     return {
+//       weatherMessage: "Sorry, I couldn't fetch the weather information.",
+//       weatherIcon: null,
+//     };
+//   }
+// };
+
+// // Fetch AI response
 // const fetchAIResponse = async (
 //   message,
 //   imageData = null,
@@ -57,7 +94,7 @@
 //               {
 //                 inlineData: {
 //                   data: imageData.split(",")[1],
-//                   mimeType: mimeType, // Use detected MIME type
+//                   mimeType: mimeType,
 //                 },
 //               },
 //             ],
@@ -90,25 +127,19 @@
 //   const chatEndRef = useRef(null);
 //   const inputRef = useRef(null);
 
-//   // useEffect(() => {
-//   //   const savedMessages = JSON.parse(localStorage.getItem("chatMessages"));
-//   //   setHeading(!(savedMessages && savedMessages.length > 0));
-//   // }, []);
-
-//   //////////////////
 //   useEffect(() => {
 //     try {
 //       const savedMessages = JSON.parse(localStorage.getItem("chatMessages"));
 //       setHeading(!(savedMessages && savedMessages.length > 0));
 //     } catch (error) {
 //       console.error("Error parsing localStorage:", error);
-//       localStorage.removeItem("chatMessages"); // Reset corrupted storage
+//       localStorage.removeItem("chatMessages");
 //     }
 //   }, []);
 
 //   useEffect(() => {
 //     if (messages.length > 50) {
-//       setMessages(messages.slice(-50)); // Keep only the last 50 messages
+//       setMessages(messages.slice(-50));
 //     }
 //     localStorage.setItem("chatMessages", JSON.stringify(messages));
 //   }, [messages]);
@@ -119,7 +150,7 @@
 
 //   useEffect(() => {
 //     const handleFocus = () => {
-//       window.scrollTo(0, 0); // Scroll to the top of the page
+//       window.scrollTo(0, 0);
 //     };
 
 //     const inputElement = inputRef.current;
@@ -134,6 +165,41 @@
 //     };
 //   }, []);
 
+//   // const handleSendMessage = async () => {
+//   //   if (inputValue.trim()) {
+//   //     const userMessage = inputValue.trim();
+//   //     setMessages((prev) => [
+//   //       ...prev,
+//   //       { text: userMessage, sender: "user", image: null },
+//   //     ]);
+//   //     setInputValue("");
+//   //     setIsLoading(true);
+//   //     setHeading(false);
+
+//   //     // Check if the user's message is related to weather
+//   //     if (
+//   //       userMessage
+//   //         .toLowerCase()
+//   //         .includes("what is the weather || what is the temperature")
+//   //     ) {
+//   //       const city = userMessage.split("in")[1]?.trim() || "London"; // Default to London if no city is specified
+//   //       const { weatherMessage, weatherIcon } = await fetchWeather(city);
+//   //       setMessages((prev) => [
+//   //         ...prev,
+//   //         { text: weatherMessage, sender: "ai", image: null, weatherIcon },
+//   //       ]);
+//   //     } else {
+//   //       const aiResponse = await fetchAIResponse(userMessage, image);
+//   //       setMessages((prev) => [
+//   //         ...prev,
+//   //         { text: aiResponse, sender: "ai", image: null },
+//   //       ]);
+//   //     }
+//   //     setIsLoading(false);
+//   //   }
+//   // };
+
+//   ///////
 //   const handleSendMessage = async () => {
 //     if (inputValue.trim()) {
 //       const userMessage = inputValue.trim();
@@ -145,64 +211,37 @@
 //       setIsLoading(true);
 //       setHeading(false);
 
-//       const aiResponse = await fetchAIResponse(userMessage, image);
-//       setMessages((prev) => [
-//         ...prev,
-//         { text: aiResponse, sender: "ai", image: null },
-//       ]);
+//       // Regex to match weather-related queries with multiple prepositions
+//       const weatherRegex =
+//         /what is the (weather|temperature)( in | of | at )?(.*)?/i;
+//       const match = userMessage.match(weatherRegex);
+
+//       if (match) {
+//         const [, type, , city] = match; // Destructure the regex match
+//         const cityName = city?.trim() || "London"; // Default to London if no city is specified
+
+//         const { weatherMessage, weatherIcon } = await fetchWeather(cityName);
+//         setMessages((prev) => [
+//           ...prev,
+//           { text: weatherMessage, sender: "ai", image: null, weatherIcon },
+//         ]);
+//       } else {
+//         const aiResponse = await fetchAIResponse(userMessage, image);
+//         setMessages((prev) => [
+//           ...prev,
+//           { text: aiResponse, sender: "ai", image: null },
+//         ]);
+//       }
 //       setIsLoading(false);
 //     }
 //   };
-
-//   // const handleImageUpload = async (event) => {
-//   //   const file = event.target.files[0];
-//   //   if (file) {
-//   //     const reader = new FileReader();
-//   //     reader.onloadend = async () => {
-//   //       const imageData = reader.result;
-//   //       setImage(imageData);
-//   //       setMessages((prev) => [
-//   //         ...prev,
-//   //         {
-//   //           text: "image uploaded now analyzing...",
-//   //           sender: "ai",
-//   //           image: null,
-//   //         },
-//   //       ]);
-//   //       const description = await fetchAIResponse(
-//   //         "Describe this image.",
-//   //         imageData
-//   //       );
-//   //       if (!description) {
-//   //         setMessages((prev) => [
-//   //           ...prev,
-//   //           {
-//   //             text: "I couldn't generate a response.",
-//   //             sender: "ai",
-//   //             image: null,
-//   //           },
-//   //         ]);
-//   //         return;
-//   //       }
-//   //       setMessages((prev) => [
-//   //         ...prev,
-//   //         { text: description, sender: "ai", image: imageData },
-//   //       ]);
-//   //     };
-
-//   //     setHeading(false);
-//   //     reader.readAsDataURL(file);
-//   //   }
-//   // };
-
-//   //////////////////////////
 //   const handleImageUpload = async (event) => {
 //     const file = event.target.files[0];
 //     if (file) {
 //       const reader = new FileReader();
 //       reader.onloadend = async () => {
 //         const imageData = reader.result;
-//         const mimeType = file.type; // Detects the image format (e.g., image/jpeg, image/png)
+//         const mimeType = file.type;
 
 //         setImage(imageData);
 //         setMessages((prev) => [
@@ -333,6 +372,28 @@
 //                     className="w-48 h-48 object-cover rounded-lg mb-2"
 //                   />
 //                 )}
+//                 {message.weatherIcon && (
+//                   <div className="mb-2">
+//                     {message.weatherIcon === "sun" && (
+//                       <Sun className="w-6 h-6 text-yellow-500" />
+//                     )}
+//                     {message.weatherIcon === "cloud" && (
+//                       <Cloud className="w-6 h-6 text-red-500" />
+//                     )}
+//                     {message.weatherIcon === "cloud-rain" && (
+//                       <CloudRain className="w-6 h-6 text-blue-500" />
+//                     )}
+//                     {message.weatherIcon === "cloud-lightning" && (
+//                       <CloudLightning className="w-6 h-6 text-slate-400" />
+//                     )}
+//                     {message.weatherIcon === "snowflake" && (
+//                       <Snowflake className="w-6 h-6 text-slate-100" />
+//                     )}
+//                     {message.weatherIcon === "cloud-drizzle" && (
+//                       <CloudDrizzle className="w-6 h-6 text-sky-400" />
+//                     )}
+//                   </div>
+//                 )}
 //                 <div
 //                   dangerouslySetInnerHTML={{
 //                     __html: DOMPurify.sanitize(
@@ -425,13 +486,16 @@ import {
   Menu,
   X,
   Send,
-  Trash2,
   Sun,
   Cloud,
   CloudRain,
   CloudLightning,
   Snowflake,
   CloudDrizzle,
+  CloudSun,
+  Cloudy,
+  CloudFog,
+  CloudSnow,
 } from "lucide-react";
 import userIcon from "./assets/working.png";
 import gptImageIcon from "./assets/chatgpt.svg";
@@ -446,6 +510,24 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 // Weather API URL
 const API_URL =
   "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+
+// Map weather conditions to icons and colors
+const weatherIcons = {
+  "clear sky": { icon: Sun, color: "text-yellow-400" }, // Yellow for sun
+  "few clouds": { icon: CloudSun, color: "text-gray-400" }, // Gray for partly cloudy
+  "scattered clouds": { icon: CloudSun, color: "text-gray-400" }, // Gray for scattered clouds
+  "broken clouds": { icon: Cloudy, color: "text-gray-500" }, // Darker gray for broken clouds
+  "overcast clouds": { icon: Cloudy, color: "text-gray-600" }, // Dark gray for overcast
+  "shower rain": { icon: CloudRain, color: "text-blue-400" }, // Blue for rain
+  "light intensity drizzle": { icon: CloudDrizzle, color: "text-blue-300" }, // Light blue for drizzle
+  rain: { icon: CloudRain, color: "text-blue-500" }, // Darker blue for rain
+  thunderstorm: { icon: CloudLightning, color: "text-purple-500" }, // Purple for thunderstorms
+  snow: { icon: Snowflake, color: "text-sky-200" }, // Light blue for snow
+  mist: { icon: CloudFog, color: "text-gray-300" }, // Light gray for mist
+  fog: { icon: CloudFog, color: "text-gray-300" }, // Light gray for fog
+  "light snow": { icon: CloudSnow, color: "text-sky-300" }, // Light blue for light snow
+  "heavy snow": { icon: Snowflake, color: "text-sky-100" }, // Very light blue for heavy snow
+};
 
 // Fetch weather data
 const fetchWeather = async (city) => {
@@ -462,37 +544,30 @@ const fetchWeather = async (city) => {
       const humidity = data.main.humidity;
       const windSpeed = data.wind.speed;
 
-      // Map weather conditions to icons
-      const weatherIcons = {
-        "clear sky": "sun",
-        "few clouds": "cloud",
-        "scattered clouds": "cloud",
-        "broken clouds": "cloud",
-        "shower rain": "cloud-rain",
-        "light intensity drizzle": "cloud-rain",
-        rain: "cloud-rain",
-        thunderstorm: "cloud-lightning",
-        snow: "snowflake",
-        mist: "cloud-drizzle",
-      };
-
-      const weatherIcon =
-        weatherIcons[weatherDescription.toLowerCase()] || "cloud";
+      // Get the weather icon and color
+      const { icon: weatherIcon, color: weatherIconColor } = weatherIcons[
+        weatherDescription.toLowerCase()
+      ] || { icon: Cloud, color: "text-gray-400" };
 
       // Create a message to display
       const weatherMessage = `The weather in ${data.name} is ${weatherDescription}. The temperature is ${temp}°C with a humidity of ${humidity}%. Wind speed is ${windSpeed} km/h.`;
 
-      // Return the weather message and icon
-      return { weatherMessage, weatherIcon };
+      // Return the weather message, icon, and color
+      return { weatherMessage, weatherIcon, weatherIconColor };
     } else {
       console.error("Weather API response not OK:", response.status);
-      return { weatherMessage: "City not found", weatherIcon: null };
+      return {
+        weatherMessage: "City not found",
+        weatherIcon: null,
+        weatherIconColor: null,
+      };
     }
   } catch (error) {
     console.error("Error fetching weather:", error);
     return {
       weatherMessage: "Sorry, I couldn't fetch the weather information.",
       weatherIcon: null,
+      weatherIconColor: null,
     };
   }
 };
@@ -584,41 +659,6 @@ const App = () => {
     };
   }, []);
 
-  // const handleSendMessage = async () => {
-  //   if (inputValue.trim()) {
-  //     const userMessage = inputValue.trim();
-  //     setMessages((prev) => [
-  //       ...prev,
-  //       { text: userMessage, sender: "user", image: null },
-  //     ]);
-  //     setInputValue("");
-  //     setIsLoading(true);
-  //     setHeading(false);
-
-  //     // Check if the user's message is related to weather
-  //     if (
-  //       userMessage
-  //         .toLowerCase()
-  //         .includes("what is the weather || what is the temperature")
-  //     ) {
-  //       const city = userMessage.split("in")[1]?.trim() || "London"; // Default to London if no city is specified
-  //       const { weatherMessage, weatherIcon } = await fetchWeather(city);
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         { text: weatherMessage, sender: "ai", image: null, weatherIcon },
-  //       ]);
-  //     } else {
-  //       const aiResponse = await fetchAIResponse(userMessage, image);
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         { text: aiResponse, sender: "ai", image: null },
-  //       ]);
-  //     }
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  ///////
   const handleSendMessage = async () => {
     if (inputValue.trim()) {
       const userMessage = inputValue.trim();
@@ -639,10 +679,17 @@ const App = () => {
         const [, type, , city] = match; // Destructure the regex match
         const cityName = city?.trim() || "London"; // Default to London if no city is specified
 
-        const { weatherMessage, weatherIcon } = await fetchWeather(cityName);
+        const { weatherMessage, weatherIcon, weatherIconColor } =
+          await fetchWeather(cityName);
         setMessages((prev) => [
           ...prev,
-          { text: weatherMessage, sender: "ai", image: null, weatherIcon },
+          {
+            text: weatherMessage,
+            sender: "ai",
+            image: null,
+            weatherIcon,
+            weatherIconColor,
+          },
         ]);
       } else {
         const aiResponse = await fetchAIResponse(userMessage, image);
@@ -654,6 +701,7 @@ const App = () => {
       setIsLoading(false);
     }
   };
+
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -793,24 +841,9 @@ const App = () => {
                 )}
                 {message.weatherIcon && (
                   <div className="mb-2">
-                    {message.weatherIcon === "sun" && (
-                      <Sun className="w-6 h-6 text-yellow-500" />
-                    )}
-                    {message.weatherIcon === "cloud" && (
-                      <Cloud className="w-6 h-6 text-red-500" />
-                    )}
-                    {message.weatherIcon === "cloud-rain" && (
-                      <CloudRain className="w-6 h-6 text-blue-500" />
-                    )}
-                    {message.weatherIcon === "cloud-lightning" && (
-                      <CloudLightning className="w-6 h-6 text-slate-400" />
-                    )}
-                    {message.weatherIcon === "snowflake" && (
-                      <Snowflake className="w-6 h-6 text-slate-100" />
-                    )}
-                    {message.weatherIcon === "cloud-drizzle" && (
-                      <CloudDrizzle className="w-6 h-6 text-sky-400" />
-                    )}
+                    {React.createElement(message.weatherIcon, {
+                      className: `w-6 h-6 ${message.weatherIconColor}`, // Apply the color
+                    })}
                   </div>
                 )}
                 <div
@@ -872,10 +905,10 @@ const App = () => {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-paperclip"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-paperclip"
               >
                 <path d="M13.234 20.252 21 12.3" />
                 <path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486" />
